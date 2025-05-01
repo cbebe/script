@@ -21,7 +21,7 @@ import (
 	"testing/iotest"
 	"time"
 
-	"github.com/bitfield/script"
+	"github.com/cbebe/script"
 	"github.com/google/go-cmp/cmp"
 	"github.com/rogpeppe/go-internal/testscript"
 )
@@ -732,129 +732,6 @@ func TestJoinJoinsInputLinesIntoSpaceSeparatedString(t *testing.T) {
 	}
 	if got != want {
 		t.Errorf("want %q, got %q", want, got)
-	}
-}
-
-func TestJQWithDotQueryPrettyPrintsInput(t *testing.T) {
-	t.Parallel()
-	input := `{"timestamp": 1649264191, "iss_position": {"longitude": "52.8439", "latitude": "10.8107"}, "message": "success"}`
-	// Fields should be sorted by key, with whitespace removed
-	want := `{"iss_position":{"latitude":"10.8107","longitude":"52.8439"},"message":"success","timestamp":1649264191}` + "\n"
-	got, err := script.Echo(input).JQ(".").String()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestJQWithFieldQueryProducesSelectedField(t *testing.T) {
-	t.Parallel()
-	input := `{"timestamp": 1649264191, "iss_position": {"longitude": "52.8439", "latitude": "10.8107"}, "message": "success"}`
-	want := `{"latitude":"10.8107","longitude":"52.8439"}` + "\n"
-	got, err := script.Echo(input).JQ(".iss_position").String()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestJQWithArrayQueryProducesRequiredArray(t *testing.T) {
-	t.Parallel()
-	input := `{"timestamp": 1649264191, "iss_position": {"longitude": "52.8439", "latitude": "10.8107"}, "message": "success"}`
-	want := `["10.8107","52.8439"]` + "\n"
-	got, err := script.Echo(input).JQ("[.iss_position.latitude, .iss_position.longitude]").String()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestJQWithArrayInputAndElementQueryProducesSelectedElement(t *testing.T) {
-	t.Parallel()
-	input := `[1, 2, 3]`
-	want := "1\n"
-	got, err := script.Echo(input).JQ(".[0]").String()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestJQHandlesGithubJSONWithRealWorldExampleQuery(t *testing.T) {
-	t.Parallel()
-	want := `{"message":"restore sample log data (fixes #102)","name":"John Arundel"}` + "\n"
-	got, err := script.File("testdata/commits.json").
-		JQ(".[0] | {message: .commit.message, name: .commit.committer.name}").String()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestJQCorrectlyQueriesMultilineInputFields(t *testing.T) {
-	t.Parallel()
-	input := `{"a":1}` + "\n" + `{"a":2}`
-	want := "1\n2\n"
-	got, err := script.Echo(input).JQ(".a").String()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestJQCorrectlyQueriesMultilineInputArrays(t *testing.T) {
-	t.Parallel()
-	input := `[1, 2, 3]` + "\n" + `[4, 5, 6]`
-	want := "1\n4\n"
-	got, err := script.Echo(input).JQ(".[0]").String()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
-	}
-}
-
-func TestJQErrorsWithInvalidQuery(t *testing.T) {
-	t.Parallel()
-	input := `[1, 2, 3]`
-	_, err := script.Echo(input).JQ(".foo & .bar").String()
-	if err == nil {
-		t.Error("want error from invalid JQ query, got nil")
-	}
-}
-
-func TestJQErrorsWithInvalidInput(t *testing.T) {
-	t.Parallel()
-	input := "invalid JSON value"
-	_, err := script.Echo(input).JQ(".").String()
-	if err == nil {
-		t.Error("want error from invalid JSON input, got nil")
-	}
-}
-
-func TestJQProducesValidResultsUntilFirstError(t *testing.T) {
-	t.Parallel()
-	input := "[1]\ninvalid JSON value\n[2]"
-	want := "1\n"
-	got, err := script.Echo(input).JQ(".[0]").String()
-	if err == nil {
-		t.Error("want error from invalid JSON input, got nil")
-	}
-	if want != got {
-		t.Error(cmp.Diff(want, got))
 	}
 }
 
@@ -2512,15 +2389,6 @@ func ExamplePipe_Join() {
 	script.Echo("hello\nworld\n").Join().Stdout()
 	// Output:
 	// hello world
-}
-
-func ExamplePipe_JQ() {
-	kernel := "Darwin"
-	arch := "x86_64"
-	query := fmt.Sprintf(".assets[] | select(.name | endswith(\"%s_%s.tar.gz\")).browser_download_url", kernel, arch)
-	script.File("testdata/releases.json").JQ(query).Stdout()
-	// Output:
-	// "https://github.com/mbarley333/blackjack/releases/download/v0.3.3/blackjack_0.3.3_Darwin_x86_64.tar.gz"
 }
 
 func ExamplePipe_Last() {

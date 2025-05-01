@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bitfield/script"
+	"github.com/cbebe/script"
 	"github.com/google/go-cmp/cmp"
 )
 
